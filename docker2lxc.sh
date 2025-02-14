@@ -62,10 +62,16 @@ check_docker() {
 
 pull_image() {
   local image="$1"
-  log_info "Pulling Docker image: '$image'..."
-  if ! docker pull "$image" >&2; then
-    log_error "Image '$image' not found, aborting."
-    exit 2
+
+  # Check if the image exists locally
+  if docker image inspect "$image" &>/dev/null; then
+    log_info "Using local Docker image: '$image'"
+  else
+    log_info "Pulling Docker image: '$image'..."
+    if ! docker pull "$image" >&2; then
+      log_error "Image '$image' not found, aborting."
+      exit 2
+    fi
   fi
 }
 
@@ -100,15 +106,11 @@ cleanup_container() {
 }
 
 main() {
-  if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  if [ "$1" == "-h" ] || [ "$1" == "--help" ] ||  [ -z "$1" ]; then
     usage
   fi
 
   check_docker
-
-  if [ -z "$1" ]; then
-    usage
-  fi
 
   local image="$1"
   local output_file=""
